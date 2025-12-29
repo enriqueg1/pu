@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'EnerDash | Monitor de Energia',
+  title: 'Consumo de Energia | Monitor de Energia',
   description: 'Dashboard de energia residencial moderno e responsivo',
 };
 

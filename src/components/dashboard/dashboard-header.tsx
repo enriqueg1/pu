@@ -54,7 +54,7 @@ export function DashboardHeader({ lastUpdateTimestamp, onSettingsClick }: Dashbo
   return (
     <div className="flex justify-between items-center">
       <h1 className="text-3xl md:text-4xl font-black text-foreground font-headline">
-        EnerDash
+        Consumo de Energia
       </h1>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3 bg-card/50 px-4 py-2 rounded-full border border-white/10">

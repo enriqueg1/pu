@@ -102,7 +102,7 @@ export default function Home() {
         </div>
 
         <footer className="text-center mt-12 text-muted-foreground text-sm">
-          <p>EnerDash - Feito com ❤️ para monitoramento de energia.</p>
+          <p>Consumo de Energia - Feito com ❤️ para monitoramento de energia.</p>
         </footer>
       </div>
       <SettingsModal
