@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 type DashboardHeaderProps = {
   lastUpdateTimestamp: number | undefined;
+  onSettingsClick: () => void;
 };
 
-export function DashboardHeader({ lastUpdateTimestamp }: DashboardHeaderProps) {
+export function DashboardHeader({ lastUpdateTimestamp, onSettingsClick }: DashboardHeaderProps) {
   const [status, setStatus] = useState<'online' | 'offline' | 'unknown'>('unknown');
 
   useEffect(() => {
@@ -53,9 +56,20 @@ export function DashboardHeader({ lastUpdateTimestamp }: DashboardHeaderProps) {
       <h1 className="text-3xl md:text-4xl font-black text-foreground font-headline">
         EnerDash
       </h1>
-      <div className="flex items-center gap-3 bg-card/50 px-4 py-2 rounded-full border border-white/10">
-        <div className={`w-3 h-3 rounded-full ${color}`}></div>
-        <span className="text-sm font-medium text-muted-foreground">{text}</span>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 bg-card/50 px-4 py-2 rounded-full border border-white/10">
+          <div className={`w-3 h-3 rounded-full ${color}`}></div>
+          <span className="text-sm font-medium text-muted-foreground">{text}</span>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full h-10 w-10 text-muted-foreground hover:bg-card/80 hover:text-foreground"
+          onClick={onSettingsClick}
+        >
+          <Settings className="h-5 w-5" />
+          <span className="sr-only">Configurações</span>
+        </Button>
       </div>
     </div>
   );
