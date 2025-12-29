@@ -3,13 +3,14 @@ import { getDatabase } from "firebase/database";
 
 // IMPORTANT: Replace with your actual Firebase configuration
 const firebaseConfig: FirebaseOptions = {
-  apiKey: "PLACEHOLDER_API_KEY",
-  authDomain: "PLACEHOLDER_AUTH_DOMAIN",
-  databaseURL: "PLACEHOLDER_DATABASE_URL",
-  projectId: "PLACEHOLDER_PROJECT_ID",
-  storageBucket: "PLACEHOLDER_STORAGE_BUCKET",
-  messagingSenderId: "PLACEHOLDER_MESSAGING_SENDER_ID",
-  appId: "PLACEHOLDER_APP_ID",
+  apiKey: "AIzaSyAkzPHNwlI3QFJGVANlvegIFTMNPnmHnCs",
+  authDomain: "enrique-s-house.firebaseapp.com",
+  databaseURL: "https://enrique-s-house-default-rtdb.firebaseio.com",
+  projectId: "enrique-s-house",
+  storageBucket: "enrique-s-house.firebasestorage.app",
+  messagingSenderId: "30014594726",
+  appId: "1:30014594726:web:fd4aa3befd158bd3499e67",
+  measurementId: "G-Y4FWY2MB1J"
 };
 
 function initializeFirebase() {
