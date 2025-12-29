@@ -56,7 +56,7 @@ export default function Home() {
           <MetricCard
             title="Consumo Total"
             icon={AreaChart}
-            value={consumo_total_kwh.toFixed(0)}
+            value={consumo_total_kwh.toFixed(1)}
             unit="kWh"
           />
         </div>
