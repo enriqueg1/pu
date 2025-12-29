@@ -16,8 +16,9 @@ import { Label } from '@/components/ui/label';
 type SettingsModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (newTariff: number) => void;
+  onSave: (newTariff: number, newInitialReading: number) => void;
   initialTariff: number;
+  initialInitialReading: number;
 };
 
 export function SettingsModal({
@@ -25,25 +26,34 @@ export function SettingsModal({
   onClose,
   onSave,
   initialTariff,
+  initialInitialReading,
 }: SettingsModalProps) {
   const [tariffValue, setTariffValue] = useState(initialTariff.toFixed(4));
+  const [initialReadingValue, setInitialReadingValue] = useState(initialInitialReading.toFixed(2));
 
   useEffect(() => {
-    setTariffValue(initialTariff.toFixed(4));
-  }, [initialTariff, isOpen]);
+    if (isOpen) {
+      setTariffValue(initialTariff.toFixed(4));
+      setInitialReadingValue(initialInitialReading.toFixed(2));
+    }
+  }, [initialTariff, initialInitialReading, isOpen]);
 
   const handleSave = () => {
     const newTariff = parseFloat(tariffValue);
-    if (!isNaN(newTariff) && newTariff > 0) {
-      onSave(newTariff);
+    const newInitialReading = parseFloat(initialReadingValue);
+    
+    const isTariffValid = !isNaN(newTariff) && newTariff > 0;
+    const isInitialReadingValid = !isNaN(newInitialReading) && newInitialReading >= 0;
+
+    if (isTariffValid && isInitialReadingValid) {
+      onSave(newTariff, newInitialReading);
     }
   };
   
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Allow only numbers and a single dot
+  const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (/^\d*\.?\d*$/.test(value)) {
-        setTariffValue(value);
+        setter(value);
     }
   };
 
@@ -63,11 +73,24 @@ export function SettingsModal({
             </Label>
             <Input
               id="tarifa"
-              type="text" // Use text to allow for more flexible input formatting control
+              type="text"
               value={tariffValue}
-              onChange={handleInputChange}
+              onChange={handleInputChange(setTariffValue)}
               className="col-span-3"
               placeholder="Ex: 0.90"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="leitura-inicial" className="text-right text-xs sm:text-sm">
+              Leitura Inicial (kWh)
+            </Label>
+            <Input
+              id="leitura-inicial"
+              type="text"
+              value={initialReadingValue}
+              onChange={handleInputChange(setInitialReadingValue)}
+              className="col-span-3"
+              placeholder="Ex: 12345.6"
             />
           </div>
         </div>

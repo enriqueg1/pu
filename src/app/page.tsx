@@ -14,7 +14,15 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
-  const { energyData, historyData, tariff, setTariff, isLoading } = useEnergyData();
+  const { 
+    energyData, 
+    historyData, 
+    tariff, 
+    setTariff, 
+    initialReading,
+    setInitialReading,
+    isLoading 
+  } = useEnergyData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
 
@@ -33,10 +41,12 @@ export default function Home() {
     style: 'currency',
     currency: 'BRL',
   });
+  
+  const totalConsumptionWithOffset = consumo_total_kwh + initialReading;
 
   const isPowerHigh = potencia_atual_watts > 4000;
 
-  const handleSaveTariff = async (newTariff: number) => {
+  const handleSaveSettings = async (newTariff: number, newInitialReading: number) => {
     if (!db) {
       toast({
         title: "Erro de Conexão",
@@ -47,17 +57,21 @@ export default function Home() {
     }
     try {
       await set(ref(db, '/config/tarifa'), newTariff);
+      await set(ref(db, '/config/leituraInicial'), newInitialReading);
+      
       setTariff(newTariff);
+      setInitialReading(newInitialReading);
+      
       toast({
         title: "Sucesso!",
-        description: "O valor da tarifa foi atualizado.",
+        description: "As configurações foram atualizadas.",
       });
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Erro ao salvar a tarifa: ", error);
+      console.error("Erro ao salvar as configurações: ", error);
       toast({
         title: "Erro ao Salvar",
-        description: "Não foi possível atualizar o valor da tarifa. Tente novamente.",
+        description: "Não foi possível atualizar as configurações. Tente novamente.",
         variant: "destructive",
       });
     }
@@ -92,7 +106,7 @@ export default function Home() {
           <MetricCard
             title="Consumo Total"
             icon={AreaChart}
-            value={consumo_total_kwh.toFixed(1)}
+            value={totalConsumptionWithOffset.toFixed(1)}
             unit="kWh"
           />
         </div>
@@ -108,8 +122,9 @@ export default function Home() {
       <SettingsModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveTariff}
+        onSave={handleSaveSettings}
         initialTariff={tariff}
+        initialInitialReading={initialReading}
       />
     </main>
   );

@@ -8,12 +8,14 @@ import type { EnergyData, HistoryData, ChartDataPoint } from '@/lib/types';
 import { subDays, format, parse } from 'date-fns';
 
 const DEFAULT_TARIFA = 0.90;
+const DEFAULT_INITIAL_READING = 0;
 
 export function useEnergyData() {
   const { toast } = useToast();
   const [energyData, setEnergyData] = useState<EnergyData | null>(null);
   const [historyData, setHistoryData] = useState<ChartDataPoint[]>([]);
   const [tariff, setTariff] = useState<number>(DEFAULT_TARIFA);
+  const [initialReading, setInitialReading] = useState<number>(DEFAULT_INITIAL_READING);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -25,6 +27,7 @@ export function useEnergyData() {
     const energyRef = ref(db, 'casa/energia');
     const historyRef = ref(db, 'historico');
     const tariffRef = ref(db, '/config/tarifa');
+    const initialReadingRef = ref(db, '/config/leituraInicial');
 
     const onEnergyValue = onValue(energyRef, (snapshot) => {
       if (snapshot.exists()) {
@@ -94,15 +97,32 @@ export function useEnergyData() {
       });
     });
 
+    const onInitialReadingValue = onValue(initialReadingRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setInitialReading(snapshot.val());
+      } else {
+        console.warn("Nenhum valor de leitura inicial encontrado em /config/leituraInicial. Usando valor padrão.");
+        setInitialReading(DEFAULT_INITIAL_READING);
+      }
+    }, (error) => {
+      console.error(error);
+      toast({
+        title: "Erro ao buscar leitura inicial",
+        description: error.message,
+        variant: "destructive",
+      });
+    });
+
     return () => {
       off(energyRef, 'value', onEnergyValue);
       off(historyRef, 'value', onHistoryValue);
       off(tariffRef, 'value', onTariffValue);
+      off(initialReadingRef, 'value', onInitialReadingValue);
     };
   // The toast function is stable and doesn't need to be in the dependency array.
   // isLoading is used to prevent multiple executions, so it should be a dependency.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading]);
 
-  return { energyData, historyData, tariff, setTariff, isLoading };
+  return { energyData, historyData, tariff, setTariff, initialReading, setInitialReading, isLoading };
 }
