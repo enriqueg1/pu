@@ -5,6 +5,7 @@ import { useEnergyData } from '@/hooks/use-energy-data';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { MetricCard } from '@/components/dashboard/metric-card';
 import { HistoryChart } from '@/components/dashboard/history-chart';
+import { PowerHistoryChart } from '@/components/dashboard/power-history-chart';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { SettingsModal } from '@/components/dashboard/settings-modal';
 import { Zap, PlugZap, AreaChart, CalendarDays } from 'lucide-react';
@@ -18,6 +19,7 @@ export default function Home() {
   const { 
     energyData, 
     rawHistory, 
+    powerHistory,
     tariff, 
     setTariff, 
     initialReading,
@@ -132,12 +134,13 @@ export default function Home() {
           />
         </div>
 
-        <div className="mt-8">
+        <div className="grid gap-8 mt-8">
+          <PowerHistoryChart powerHistory={powerHistory} />
           <HistoryChart rawHistory={rawHistory} tariff={tariff} />
         </div>
 
         <footer className="text-center mt-12 text-muted-foreground text-sm">
-          <p>Consumo de Energia - Feito com ❤️ para monitoramento residencial.</p>
+          <p>Consumo de Energia - Monitoramento residencial inteligente.</p>
         </footer>
       </div>
       <SettingsModal

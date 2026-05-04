@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { ref, onValue, off } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
-import type { EnergyData, HistoryData } from '@/lib/types';
+import type { EnergyData, HistoryData, PowerHistory } from '@/lib/types';
 
 const DEFAULT_TARIFA = 0.90;
 const DEFAULT_INITIAL_READING = 0;
@@ -13,6 +13,7 @@ export function useEnergyData() {
   const { toast } = useToast();
   const [energyData, setEnergyData] = useState<EnergyData | null>(null);
   const [rawHistory, setRawHistory] = useState<HistoryData>({});
+  const [powerHistory, setPowerHistory] = useState<PowerHistory>({});
   const [tariff, setTariff] = useState<number>(DEFAULT_TARIFA);
   const [initialReading, setInitialReading] = useState<number>(DEFAULT_INITIAL_READING);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,6 +26,7 @@ export function useEnergyData() {
 
     const energyRef = ref(db, 'casa/energia');
     const historyRef = ref(db, 'historico');
+    const powerHistoryRef = ref(db, 'historico_potencia');
     const tariffRef = ref(db, '/config/tarifa');
     const initialReadingRef = ref(db, '/config/leituraInicial');
 
@@ -38,6 +40,12 @@ export function useEnergyData() {
     const unsubscribeHistory = onValue(historyRef, (snapshot) => {
       if (snapshot.exists()) {
         setRawHistory(snapshot.val());
+      }
+    });
+
+    const unsubscribePowerHistory = onValue(powerHistoryRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setPowerHistory(snapshot.val());
       }
     });
 
@@ -56,6 +64,7 @@ export function useEnergyData() {
     return () => {
       off(energyRef);
       off(historyRef);
+      off(powerHistoryRef);
       off(tariffRef);
       off(initialReadingRef);
     };
@@ -64,6 +73,7 @@ export function useEnergyData() {
   return { 
     energyData, 
     rawHistory, 
+    powerHistory,
     tariff, 
     setTariff, 
     initialReading, 

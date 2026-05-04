@@ -9,8 +9,19 @@ export interface HistoryData {
   [dateKey: string]: number; // "ddMMyyyy": kWh
 }
 
+export interface PowerHistory {
+  [dateKey: string]: {
+    [timeKey: string]: number; // "hhmm": Watts
+  };
+}
+
 export interface ChartDataPoint {
   date: string; // formatada para o gráfico
   consumo: number;
   custoAcumulado: number;
+}
+
+export interface PowerDataPoint {
+  time: string;
+  power: number;
 }
