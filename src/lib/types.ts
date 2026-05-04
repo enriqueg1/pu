@@ -10,6 +10,7 @@ export interface HistoryData {
 }
 
 export interface ChartDataPoint {
-  date: string; // "dd/MM"
+  date: string; // formatada para o gráfico
   consumo: number;
+  custoAcumulado: number;
 }
