@@ -8,10 +8,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Calendar as CalendarIcon, FilterX } from 'lucide-react';
-import { format, parse, isWithinInterval, startOfDay, endOfDay, startOfWeek, startOfMonth, eachDayOfInterval } from 'date-fns';
+import { format, parse, isWithinInterval, startOfDay, endOfDay, startOfMonth, startOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
-import type { HistoryData, ChartDataPoint } from '@/lib/types';
+import type { HistoryData } from '@/lib/types';
 
 type HistoryChartProps = {
   rawHistory: HistoryData;
@@ -22,7 +21,8 @@ type ViewType = 'day' | 'week' | 'month';
 
 export function HistoryChart({ rawHistory, tariff }: HistoryChartProps) {
   const [view, setView] = useState<ViewType>('day');
-  const [startDate, setStartDate] = useState<Date | undefined>(startOfDay(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)));
+  // Define o início do mês atual como padrão inicial
+  const [startDate, setStartDate] = useState<Date | undefined>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date | undefined>(endOfDay(new Date()));
 
   const chartData = useMemo(() => {
@@ -59,7 +59,8 @@ export function HistoryChart({ rawHistory, tariff }: HistoryChartProps) {
   }, [rawHistory, view, startDate, endDate, tariff]);
 
   const resetFilters = () => {
-    setStartDate(startOfDay(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)));
+    // Reset para o mês atual
+    setStartDate(startOfMonth(new Date()));
     setEndDate(endOfDay(new Date()));
     setView('day');
   };
@@ -108,7 +109,7 @@ export function HistoryChart({ rawHistory, tariff }: HistoryChartProps) {
             </Popover>
           </div>
 
-          <Button variant="outline" size="icon" className="h-9 w-9" onClick={resetFilters} title="Limpar Filtros">
+          <Button variant="outline" size="icon" className="h-9 w-9" onClick={resetFilters} title="Limpar Filtros (Mês Atual)">
             <FilterX className="h-4 w-4" />
           </Button>
         </div>
