@@ -8,10 +8,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Calendar as CalendarIcon, FilterX } from 'lucide-react';
-import { format, parse, isWithinInterval, startOfDay, endOfDay, startOfWeek, startOfMonth, eachDayOfInterval } from 'date-fns';
+import { format, parse, isWithinInterval, startOfDay, endOfDay, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
-import type { HistoryData, ChartDataPoint } from '@/lib/types';
+import type { HistoryData } from '@/lib/types';
 
 type HistoryChartProps = {
   rawHistory: HistoryData;
@@ -22,7 +21,8 @@ type ViewType = 'day' | 'week' | 'month';
 
 export function HistoryChart({ rawHistory, tariff }: HistoryChartProps) {
   const [view, setView] = useState<ViewType>('day');
-  const [startDate, setStartDate] = useState<Date | undefined>(startOfDay(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)));
+  // Inicializa com o início do mês atual e o fim do dia de hoje
+  const [startDate, setStartDate] = useState<Date | undefined>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date | undefined>(endOfDay(new Date()));
 
   const chartData = useMemo(() => {
@@ -39,9 +39,15 @@ export function HistoryChart({ rawHistory, tariff }: HistoryChartProps) {
       const date = parse(key, 'ddMMyyyy', new Date());
       if (isWithinInterval(date, { start: startDate, end: endDate })) {
         let groupKey = '';
-        if (view === 'day') groupKey = format(date, 'dd/MM');
-        else if (view === 'week') groupKey = `Sem ${format(startOfWeek(date), 'dd/MM')}`;
-        else groupKey = format(startOfMonth(date), 'MMM/yy', { locale: ptBR });
+        if (view === 'day') {
+          groupKey = format(date, 'dd/MM');
+        } else if (view === 'week') {
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          groupKey = `Sem ${format(weekStart, 'dd/MM')}`;
+        } else {
+          groupKey = format(date, 'MMM/yy', { locale: ptBR });
+        }
 
         data[groupKey] = (data[groupKey] || 0) + rawHistory[key];
       }
@@ -59,7 +65,7 @@ export function HistoryChart({ rawHistory, tariff }: HistoryChartProps) {
   }, [rawHistory, view, startDate, endDate, tariff]);
 
   const resetFilters = () => {
-    setStartDate(startOfDay(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)));
+    setStartDate(startOfMonth(new Date()));
     setEndDate(endOfDay(new Date()));
     setView('day');
   };
@@ -71,7 +77,7 @@ export function HistoryChart({ rawHistory, tariff }: HistoryChartProps) {
           <CardTitle className="text-base font-medium text-muted-foreground">
             Histórico de Consumo e Custos
           </CardTitle>
-          <p className="text-xs text-muted-foreground mt-1">Barras: Consumo (kWh) | Linha: Custo (R$)</p>
+          <p className="text-xs text-muted-foreground mt-1">Barras: Consumo (kWh) | Linha: Custo Acumulado (R$)</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-2">
