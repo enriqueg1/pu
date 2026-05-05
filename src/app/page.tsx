@@ -102,44 +102,44 @@ export default function Home() {
           onSettingsClick={() => setIsModalOpen(true)}
         />
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mt-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mt-6 md:mt-8">
           <MetricCard
-            title="Potência Atual"
+            title="Potência"
             icon={Zap}
-            value={potencia_atual_watts.toFixed(1)}
+            value={potencia_atual_watts.toFixed(0)}
             unit="W"
             valueClassName={isPowerHigh ? 'text-destructive' : 'text-primary'}
-            footerText={isPowerHigh ? "Consumo elevado!" : "Consumo normal"}
+            footerText={isPowerHigh ? "Elevado!" : "Normal"}
           />
           <MetricCard
-            title="Consumo Hoje"
+            title="Hoje"
             icon={PlugZap}
             value={consumo_hoje_kwh.toFixed(2)}
             unit="kWh"
             valueClassName="text-accent"
-            footerText={`Custo estimado: ${costToday}`}
+            footerText={`Custo: ${costToday}`}
           />
           <MetricCard
-            title="Consumo Mês"
+            title="Mês"
             icon={CalendarDays}
             value={currentMonthData.kwh.toFixed(1)}
             unit="kWh"
-            footerText={`Custo: ${currentMonthData.cost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
+            footerText={`R$ ${currentMonthData.cost.toFixed(2)}`}
           />
           <MetricCard
-            title="Consumo Total"
+            title="Total"
             icon={AreaChart}
             value={totalConsumptionWithOffset.toFixed(1)}
             unit="kWh"
           />
         </div>
 
-        <div className="mt-8 space-y-8">
+        <div className="mt-6 md:mt-8 space-y-6 md:space-y-8">
           <HistoryChart rawHistory={rawHistory} tariff={tariff} />
           <PowerHistoryChart powerHistory={powerHistory} />
         </div>
 
-        <footer className="text-center mt-12 text-muted-foreground text-sm">
+        <footer className="text-center mt-12 pb-8 text-muted-foreground text-[10px] md:text-sm">
           <p>Consumo de Energia - Feito com ❤️ para monitoramento residencial.</p>
         </footer>
       </div>
