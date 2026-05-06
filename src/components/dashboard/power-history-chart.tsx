@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceArea } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Calendar as CalendarIcon, FilterX, Activity } from 'lucide-react';
-import { format, parse, startOfDay } from 'date-fns';
+import { Calendar as CalendarIcon, FilterX, Activity, ZoomIn, Maximize2 } from 'lucide-react';
+import { format } from 'date-fns';
 import type { PowerHistoryData } from '@/lib/types';
 
 type PowerHistoryChartProps = {
@@ -16,8 +16,16 @@ type PowerHistoryChartProps = {
 
 export function PowerHistoryChart({ powerHistory }: PowerHistoryChartProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  
+  // Estados para o Zoom
+  const [refAreaLeft, setRefAreaLeft] = useState<string | null>(null);
+  const [refAreaRight, setRefAreaRight] = useState<string | null>(null);
+  const [left, setLeft] = useState<string | number>('dataMin');
+  const [right, setRight] = useState<string | number>('dataMax');
+  const [top, setTop] = useState<string | number>('auto');
+  const [bottom, setBottom] = useState<string | number>('auto');
 
-  const chartData = useMemo(() => {
+  const rawData = useMemo(() => {
     if (!selectedDate) return [];
 
     const dateKey = format(selectedDate, 'ddMMyyyy');
@@ -25,10 +33,8 @@ export function PowerHistoryChart({ powerHistory }: PowerHistoryChartProps) {
 
     if (!dayData) return [];
 
-    // Transform and sort by time
     return Object.entries(dayData)
       .map(([timeKey, watts]) => {
-        // timeKey is HHMM
         const hours = timeKey.substring(0, 2);
         const minutes = timeKey.substring(2, 4);
         return {
@@ -40,8 +46,48 @@ export function PowerHistoryChart({ powerHistory }: PowerHistoryChartProps) {
       .sort((a, b) => a.sortKey - b.sortKey);
   }, [powerHistory, selectedDate]);
 
+  const zoom = () => {
+    if (refAreaLeft === refAreaRight || refAreaRight === null || refAreaLeft === null) {
+      setRefAreaLeft(null);
+      setRefAreaRight(null);
+      return;
+    }
+
+    let start = refAreaLeft;
+    let end = refAreaRight;
+
+    if (refAreaLeft > refAreaRight) {
+      [start, end] = [refAreaRight, refAreaLeft];
+    }
+
+    // Encontrar o Y min/max para o período selecionado para ajustar o zoom vertical também
+    const zoomData = rawData.filter(d => d.time >= start && d.time <= end);
+    let yMax = 0;
+    let yMin = Infinity;
+
+    zoomData.forEach(d => {
+      if (d.watts > yMax) yMax = d.watts;
+      if (d.watts < yMin) yMin = d.watts;
+    });
+
+    setRefAreaLeft(null);
+    setRefAreaRight(null);
+    setLeft(start);
+    setRight(end);
+    setTop(yMax + (yMax * 0.1));
+    setBottom(Math.max(0, yMin - (yMin * 0.1)));
+  };
+
+  const zoomOut = () => {
+    setLeft('dataMin');
+    setRight('dataMax');
+    setTop('auto');
+    setBottom('auto');
+  };
+
   const resetFilter = () => {
     setSelectedDate(new Date());
+    zoomOut();
   };
 
   return (
@@ -53,7 +99,20 @@ export function PowerHistoryChart({ powerHistory }: PowerHistoryChartProps) {
             <CardTitle className="text-base font-medium text-muted-foreground">
               Perfil de Carga (Potência)
             </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">Variação da potência em Watts ao longo do dia</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-xs text-muted-foreground">Arraste no gráfico para dar zoom</p>
+              {left !== 'dataMin' && (
+                <Button 
+                  variant="link" 
+                  size="sm" 
+                  className="h-auto p-0 text-xs text-accent animate-pulse" 
+                  onClick={zoomOut}
+                >
+                  <Maximize2 className="h-3 w-3 mr-1" />
+                  Resetar Zoom
+                </Button>
+              )}
+            </div>
           </div>
         </div>
         
@@ -69,7 +128,10 @@ export function PowerHistoryChart({ powerHistory }: PowerHistoryChartProps) {
               <Calendar 
                 mode="single" 
                 selected={selectedDate} 
-                onSelect={setSelectedDate} 
+                onSelect={(date) => {
+                  setSelectedDate(date);
+                  zoomOut();
+                }} 
                 initialFocus 
                 disabled={(date) => date > new Date()}
               />
@@ -82,10 +144,16 @@ export function PowerHistoryChart({ powerHistory }: PowerHistoryChartProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] w-full">
-          {chartData.length > 0 ? (
+        <div className="h-[300px] w-full select-none cursor-crosshair">
+          {rawData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <LineChart 
+                data={rawData} 
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                onMouseDown={e => e && setRefAreaLeft(e.activeLabel || null)}
+                onMouseMove={e => e && refAreaLeft && setRefAreaRight(e.activeLabel || null)}
+                onMouseUp={zoom}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.5)" vertical={false} />
                 <XAxis 
                   dataKey="time" 
@@ -94,13 +162,17 @@ export function PowerHistoryChart({ powerHistory }: PowerHistoryChartProps) {
                   tickLine={false} 
                   axisLine={false} 
                   minTickGap={30}
+                  domain={[left, right]}
+                  allowDataOverflow
                 />
                 <YAxis 
                   stroke="hsl(var(--muted-foreground))" 
                   fontSize={11} 
                   tickLine={false} 
                   axisLine={false} 
-                  tickFormatter={(v) => `${v}W`} 
+                  tickFormatter={(v) => `${v}W`}
+                  domain={[bottom, top]}
+                  allowDataOverflow
                 />
                 <Tooltip
                   content={({ active, payload }) => {
@@ -125,8 +197,17 @@ export function PowerHistoryChart({ powerHistory }: PowerHistoryChartProps) {
                   strokeWidth={2} 
                   dot={false}
                   activeDot={{ r: 4, strokeWidth: 0 }}
-                  animationDuration={1000}
+                  animationDuration={300}
                 />
+                {refAreaLeft && refAreaRight ? (
+                  <ReferenceArea 
+                    x1={refAreaLeft} 
+                    x2={refAreaRight} 
+                    strokeOpacity={0.3} 
+                    fill="hsl(var(--accent))" 
+                    fillOpacity={0.1} 
+                  />
+                ) : null}
               </LineChart>
             </ResponsiveContainer>
           ) : (
