@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -20,8 +19,6 @@ type SettingsValues = {
   initialReading: number;
   lastReadingDate: string;
   nextReadingDate: string;
-  monthlyGoal: number;
-  lastInvoiceReading: number;
 };
 
 type SettingsModalProps = {
@@ -41,21 +38,16 @@ export function SettingsModal({
   const [initialReadingValue, setInitialReadingValue] = useState('');
   const [lastReadingDate, setLastReadingDate] = useState('');
   const [nextReadingDate, setNextReadingDate] = useState('');
-  const [monthlyGoal, setMonthlyGoal] = useState('');
-  const [lastInvoiceReading, setLastInvoiceReading] = useState('');
 
   // Sincroniza os valores locais APENAS quando o modal abre.
-  // Isso evita que atualizações em tempo real do Firebase sobrescrevam o que o usuário está digitando.
   useEffect(() => {
     if (isOpen) {
       setTariffValue(initialValues.tariff.toString());
       setInitialReadingValue(initialValues.initialReading.toString());
       setLastReadingDate(initialValues.lastReadingDate || '');
       setNextReadingDate(initialValues.nextReadingDate || '');
-      setMonthlyGoal(initialValues.monthlyGoal.toString());
-      setLastInvoiceReading(initialValues.lastInvoiceReading.toString());
     }
-  }, [isOpen]); // Removido initialValues da dependência para evitar resets durante a digitação
+  }, [isOpen]);
 
   const handleSave = () => {
     onSave({
@@ -63,14 +55,11 @@ export function SettingsModal({
       initialReading: parseFloat(initialReadingValue) || 0,
       lastReadingDate: lastReadingDate,
       nextReadingDate: nextReadingDate,
-      monthlyGoal: parseFloat(monthlyGoal) || 0,
-      lastInvoiceReading: parseFloat(lastInvoiceReading) || 0,
     });
   };
   
   const handleNumericChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Permite números e um único ponto decimal
     if (/^\d*\.?\d*$/.test(value)) {
         setter(value);
     }
@@ -94,10 +83,6 @@ export function SettingsModal({
                 <Label htmlFor="tarifa" className="text-right text-xs">Tarifa (R$/kWh)</Label>
                 <Input id="tarifa" value={tariffValue} onChange={handleNumericChange(setTariffValue)} className="col-span-3" />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="meta" className="text-right text-xs">Meta Mensal (kWh)</Label>
-                <Input id="meta" value={monthlyGoal} onChange={handleNumericChange(setMonthlyGoal)} className="col-span-3" />
-              </div>
             </div>
 
             <div className="space-y-4">
@@ -105,10 +90,6 @@ export function SettingsModal({
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="leitura-inicial" className="text-right text-xs">Leitura Medidor (kWh)</Label>
                 <Input id="leitura-inicial" value={initialReadingValue} onChange={handleNumericChange(setInitialReadingValue)} className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="leitura-fatura" className="text-right text-xs">Fatura Anterior (kWh)</Label>
-                <Input id="leitura-fatura" value={lastInvoiceReading} onChange={handleNumericChange(setLastInvoiceReading)} className="col-span-3" />
               </div>
             </div>
 

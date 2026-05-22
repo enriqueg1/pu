@@ -25,7 +25,6 @@ export default function Home() {
     lastReadingDate,
     nextReadingDate,
     monthlyGoal,
-    lastInvoiceReading,
     isLoading 
   } = useEnergyData();
   
@@ -35,7 +34,6 @@ export default function Home() {
   const currentMonthData = useMemo(() => {
     let monthlyKWh = 0;
     
-    // Se tivermos datas de leitura, usamos esse intervalo para o cálculo do "Mês"
     if (lastReadingDate && nextReadingDate) {
       const start = parseISO(lastReadingDate);
       const end = parseISO(nextReadingDate);
@@ -47,7 +45,6 @@ export default function Home() {
         }
       });
     } else {
-      // Caso contrário, usa o mês civil atual como padrão
       const currentMonthKey = format(new Date(), 'MMyyyy');
       Object.entries(rawHistory).forEach(([key, value]) => {
         if (key.endsWith(currentMonthKey)) {
@@ -92,8 +89,6 @@ export default function Home() {
       await set(ref(db, '/config/leituraInicial'), values.initialReading);
       await set(ref(db, '/config/dataUltimaLeitura'), values.lastReadingDate);
       await set(ref(db, '/config/dataProximaLeitura'), values.nextReadingDate);
-      await set(ref(db, '/config/metaMensal'), values.monthlyGoal);
-      await set(ref(db, '/config/leituraFaturaAnterior'), values.lastInvoiceReading);
       
       toast({ title: "Sucesso!", description: "Configurações atualizadas." });
       setIsModalOpen(false);
@@ -161,9 +156,7 @@ export default function Home() {
           tariff,
           initialReading,
           lastReadingDate,
-          nextReadingDate,
-          monthlyGoal,
-          lastInvoiceReading
+          nextReadingDate
         }}
       />
     </main>
