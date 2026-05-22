@@ -13,7 +13,7 @@ import type { EnergyData } from '@/lib/types';
 import { ref, set } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, parse, isWithinInterval, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 
 export default function Home() {
   const { 
@@ -21,29 +21,46 @@ export default function Home() {
     rawHistory, 
     powerHistory,
     tariff, 
-    setTariff, 
     initialReading,
-    setInitialReading,
+    lastReadingDate,
+    nextReadingDate,
+    monthlyGoal,
+    lastInvoiceReading,
     isLoading 
   } = useEnergyData();
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
 
   const currentMonthData = useMemo(() => {
-    const currentMonthKey = format(new Date(), 'MMyyyy');
     let monthlyKWh = 0;
     
-    Object.entries(rawHistory).forEach(([key, value]) => {
-      if (key.endsWith(currentMonthKey)) {
-        monthlyKWh += value;
-      }
-    });
+    // Se tivermos datas de leitura, usamos esse intervalo para o cálculo do "Mês"
+    if (lastReadingDate && nextReadingDate) {
+      const start = parseISO(lastReadingDate);
+      const end = parseISO(nextReadingDate);
+      
+      Object.entries(rawHistory).forEach(([key, value]) => {
+        const date = parse(key, 'ddMMyyyy', new Date());
+        if (isWithinInterval(date, { start, end })) {
+          monthlyKWh += value;
+        }
+      });
+    } else {
+      // Caso contrário, usa o mês civil atual como padrão
+      const currentMonthKey = format(new Date(), 'MMyyyy');
+      Object.entries(rawHistory).forEach(([key, value]) => {
+        if (key.endsWith(currentMonthKey)) {
+          monthlyKWh += value;
+        }
+      });
+    }
 
     return {
       kwh: monthlyKWh,
       cost: monthlyKWh * tariff
     };
-  }, [rawHistory, tariff]);
+  }, [rawHistory, tariff, lastReadingDate, nextReadingDate]);
 
   if (isLoading || !energyData) {
     return <DashboardSkeleton />;
@@ -64,33 +81,24 @@ export default function Home() {
   const totalConsumptionWithOffset = consumo_total_kwh + initialReading;
   const isPowerHigh = potencia_atual_watts > 4000;
 
-  const handleSaveSettings = async (newTariff: number, newInitialReading: number) => {
+  const handleSaveSettings = async (values: any) => {
     if (!db) {
-      toast({
-        title: "Erro de Conexão",
-        description: "A conexão com o banco de dados não foi estabelecida.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro de Conexão", description: "Firebase não inicializado.", variant: "destructive" });
       return;
     }
+    
     try {
-      await set(ref(db, '/config/tarifa'), newTariff);
-      await set(ref(db, '/config/leituraInicial'), newInitialReading);
+      await set(ref(db, '/config/tarifa'), values.tariff);
+      await set(ref(db, '/config/leituraInicial'), values.initialReading);
+      await set(ref(db, '/config/dataUltimaLeitura'), values.lastReadingDate);
+      await set(ref(db, '/config/dataProximaLeitura'), values.nextReadingDate);
+      await set(ref(db, '/config/metaMensal'), values.monthlyGoal);
+      await set(ref(db, '/config/leituraFaturaAnterior'), values.lastInvoiceReading);
       
-      setTariff(newTariff);
-      setInitialReading(newInitialReading);
-      
-      toast({
-        title: "Sucesso!",
-        description: "As configurações foram atualizadas.",
-      });
+      toast({ title: "Sucesso!", description: "Configurações atualizadas." });
       setIsModalOpen(false);
     } catch (error) {
-      toast({
-        title: "Erro ao Salvar",
-        description: "Não foi possível atualizar as configurações.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro ao Salvar", description: "Falha na comunicação com o banco.", variant: "destructive" });
     }
   };
 
@@ -120,7 +128,7 @@ export default function Home() {
             footerText={`Custo: ${costToday}`}
           />
           <MetricCard
-            title="Mês"
+            title={lastReadingDate ? "Ciclo Atual" : "Este Mês"}
             icon={CalendarDays}
             value={currentMonthData.kwh.toFixed(1)}
             unit="kWh"
@@ -131,6 +139,7 @@ export default function Home() {
             icon={AreaChart}
             value={totalConsumptionWithOffset.toFixed(1)}
             unit="kWh"
+            footerText={monthlyGoal > 0 ? `Meta: ${monthlyGoal} kWh` : undefined}
           />
         </div>
 
@@ -143,12 +152,19 @@ export default function Home() {
           <p>Consumo de Energia - Feito com ❤️ para monitoramento residencial.</p>
         </footer>
       </div>
+      
       <SettingsModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveSettings}
-        initialTariff={tariff}
-        initialInitialReading={initialReading}
+        initialValues={{
+          tariff,
+          initialReading,
+          lastReadingDate,
+          nextReadingDate,
+          monthlyGoal,
+          lastInvoiceReading
+        }}
       />
     </main>
   );
