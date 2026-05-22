@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -36,13 +37,15 @@ export function SettingsModal({
   onSave,
   initialValues,
 }: SettingsModalProps) {
-  const [tariffValue, setTariffValue] = useState(initialValues.tariff.toString());
-  const [initialReadingValue, setInitialReadingValue] = useState(initialValues.initialReading.toString());
-  const [lastReadingDate, setLastReadingDate] = useState(initialValues.lastReadingDate);
-  const [nextReadingDate, setNextReadingDate] = useState(initialValues.nextReadingDate);
-  const [monthlyGoal, setMonthlyGoal] = useState(initialValues.monthlyGoal.toString());
-  const [lastInvoiceReading, setLastInvoiceReading] = useState(initialValues.lastInvoiceReading.toString());
+  const [tariffValue, setTariffValue] = useState('');
+  const [initialReadingValue, setInitialReadingValue] = useState('');
+  const [lastReadingDate, setLastReadingDate] = useState('');
+  const [nextReadingDate, setNextReadingDate] = useState('');
+  const [monthlyGoal, setMonthlyGoal] = useState('');
+  const [lastInvoiceReading, setLastInvoiceReading] = useState('');
 
+  // Sincroniza os valores locais APENAS quando o modal abre.
+  // Isso evita que atualizações em tempo real do Firebase sobrescrevam o que o usuário está digitando.
   useEffect(() => {
     if (isOpen) {
       setTariffValue(initialValues.tariff.toString());
@@ -52,7 +55,7 @@ export function SettingsModal({
       setMonthlyGoal(initialValues.monthlyGoal.toString());
       setLastInvoiceReading(initialValues.lastInvoiceReading.toString());
     }
-  }, [initialValues, isOpen]);
+  }, [isOpen]); // Removido initialValues da dependência para evitar resets durante a digitação
 
   const handleSave = () => {
     onSave({
@@ -67,6 +70,7 @@ export function SettingsModal({
   
   const handleNumericChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    // Permite números e um único ponto decimal
     if (/^\d*\.?\d*$/.test(value)) {
         setter(value);
     }
