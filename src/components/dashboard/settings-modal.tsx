@@ -17,6 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 type SettingsValues = {
   tariff: number;
   initialReading: number;
+  previousReadingDate: string;
   lastReadingDate: string;
   nextReadingDate: string;
 };
@@ -36,23 +37,25 @@ export function SettingsModal({
 }: SettingsModalProps) {
   const [tariffValue, setTariffValue] = useState('');
   const [initialReadingValue, setInitialReadingValue] = useState('');
+  const [previousReadingDate, setPreviousReadingDate] = useState('');
   const [lastReadingDate, setLastReadingDate] = useState('');
   const [nextReadingDate, setNextReadingDate] = useState('');
 
-  // Sincroniza os valores locais APENAS quando o modal abre.
   useEffect(() => {
     if (isOpen) {
       setTariffValue(initialValues.tariff.toString());
       setInitialReadingValue(initialValues.initialReading.toString());
+      setPreviousReadingDate(initialValues.previousReadingDate || '');
       setLastReadingDate(initialValues.lastReadingDate || '');
       setNextReadingDate(initialValues.nextReadingDate || '');
     }
-  }, [isOpen]);
+  }, [isOpen, initialValues]);
 
   const handleSave = () => {
     onSave({
       tariff: parseFloat(tariffValue) || 0,
       initialReading: parseFloat(initialReadingValue) || 0,
+      previousReadingDate: previousReadingDate,
       lastReadingDate: lastReadingDate,
       nextReadingDate: nextReadingDate,
     });
@@ -94,13 +97,17 @@ export function SettingsModal({
             </div>
 
             <div className="space-y-4">
-              <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Ciclo de Cobrança</h4>
+              <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Datas do Ciclo</h4>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="data-inicio" className="text-right text-xs">Última Leitura</Label>
+                <Label htmlFor="data-penultima" className="text-right text-xs leading-tight">Leitura Anterior</Label>
+                <Input id="data-penultima" type="date" value={previousReadingDate} onChange={(e) => setPreviousReadingDate(e.target.value)} className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="data-inicio" className="text-right text-xs leading-tight">Leitura Atual</Label>
                 <Input id="data-inicio" type="date" value={lastReadingDate} onChange={(e) => setLastReadingDate(e.target.value)} className="col-span-3" />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="data-fim" className="text-right text-xs">Próxima Leitura</Label>
+                <Label htmlFor="data-fim" className="text-right text-xs leading-tight">Próxima Leitura</Label>
                 <Input id="data-fim" type="date" value={nextReadingDate} onChange={(e) => setNextReadingDate(e.target.value)} className="col-span-3" />
               </div>
             </div>
