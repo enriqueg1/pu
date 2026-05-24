@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useEnergyData } from '@/hooks/use-energy-data';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { MetricCard } from '@/components/dashboard/metric-card';
@@ -13,7 +13,7 @@ import type { EnergyData } from '@/lib/types';
 import { ref, set } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { format, parse, isWithinInterval, startOfMonth, parseISO } from 'date-fns';
+import { format, parse, isWithinInterval, parseISO } from 'date-fns';
 
 export default function Home() {
   const { 
@@ -29,10 +29,17 @@ export default function Home() {
   } = useEnergyData();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Cálculo do ciclo atual
   const currentMonthData = useMemo(() => {
+    if (!isMounted) return { kwh: 0, cost: 0 };
+    
     let monthlyKWh = 0;
     
     if (lastReadingDate && nextReadingDate) {
@@ -58,10 +65,11 @@ export default function Home() {
       kwh: monthlyKWh,
       cost: monthlyKWh * tariff
     };
-  }, [rawHistory, tariff, lastReadingDate, nextReadingDate]);
+  }, [rawHistory, tariff, lastReadingDate, nextReadingDate, isMounted]);
 
   // Cálculo da última fatura fechada
   const lastInvoiceData = useMemo(() => {
+    if (!isMounted) return { kwh: 0, cost: 0 };
     let invoiceKWh = 0;
     
     if (previousReadingDate && lastReadingDate) {
@@ -70,7 +78,6 @@ export default function Home() {
       
       Object.entries(rawHistory).forEach(([key, value]) => {
         const date = parse(key, 'ddMMyyyy', new Date());
-        // Intervalo entre a leitura anterior e a atual (fatura fechada)
         if (isWithinInterval(date, { start, end })) {
           invoiceKWh += value;
         }
@@ -81,9 +88,9 @@ export default function Home() {
       kwh: invoiceKWh,
       cost: invoiceKWh * tariff
     };
-  }, [rawHistory, tariff, previousReadingDate, lastReadingDate]);
+  }, [rawHistory, tariff, previousReadingDate, lastReadingDate, isMounted]);
 
-  if (isLoading || !energyData) {
+  if (isLoading || !energyData || !isMounted) {
     return <DashboardSkeleton />;
   }
 
