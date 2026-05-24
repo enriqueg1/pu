@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useEnergyData } from '@/hooks/use-energy-data';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { MetricCard } from '@/components/dashboard/metric-card';
@@ -8,12 +8,12 @@ import { HistoryChart } from '@/components/dashboard/history-chart';
 import { PowerHistoryChart } from '@/components/dashboard/power-history-chart';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { SettingsModal } from '@/components/dashboard/settings-modal';
-import { Zap, PlugZap, AreaChart, CalendarDays } from 'lucide-react';
+import { Zap, PlugZap, AreaChart, CalendarDays, Receipt } from 'lucide-react';
 import type { EnergyData } from '@/lib/types';
 import { ref, set } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { format, parse, isWithinInterval, startOfMonth, endOfMonth, parseISO } from 'date-fns';
+import { format, parse, isWithinInterval, parseISO } from 'date-fns';
 
 export default function Home() {
   const { 
@@ -22,20 +22,26 @@ export default function Home() {
     powerHistory,
     tariff, 
     initialReading,
+    previousReadingDate,
     lastReadingDate,
     nextReadingDate,
-    monthlyGoal,
-    lastInvoiceReading,
     isLoading 
   } = useEnergyData();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const { toast } = useToast();
 
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Cálculo do ciclo atual
   const currentMonthData = useMemo(() => {
+    if (!isMounted) return { kwh: 0, cost: 0 };
+    
     let monthlyKWh = 0;
     
-    // Se tivermos datas de leitura, usamos esse intervalo para o cálculo do "Mês"
     if (lastReadingDate && nextReadingDate) {
       const start = parseISO(lastReadingDate);
       const end = parseISO(nextReadingDate);
@@ -47,7 +53,6 @@ export default function Home() {
         }
       });
     } else {
-      // Caso contrário, usa o mês civil atual como padrão
       const currentMonthKey = format(new Date(), 'MMyyyy');
       Object.entries(rawHistory).forEach(([key, value]) => {
         if (key.endsWith(currentMonthKey)) {
@@ -60,9 +65,32 @@ export default function Home() {
       kwh: monthlyKWh,
       cost: monthlyKWh * tariff
     };
-  }, [rawHistory, tariff, lastReadingDate, nextReadingDate]);
+  }, [rawHistory, tariff, lastReadingDate, nextReadingDate, isMounted]);
 
-  if (isLoading || !energyData) {
+  // Cálculo da última fatura fechada
+  const lastInvoiceData = useMemo(() => {
+    if (!isMounted) return { kwh: 0, cost: 0 };
+    let invoiceKWh = 0;
+    
+    if (previousReadingDate && lastReadingDate) {
+      const start = parseISO(previousReadingDate);
+      const end = parseISO(lastReadingDate);
+      
+      Object.entries(rawHistory).forEach(([key, value]) => {
+        const date = parse(key, 'ddMMyyyy', new Date());
+        if (isWithinInterval(date, { start, end })) {
+          invoiceKWh += value;
+        }
+      });
+    }
+
+    return {
+      kwh: invoiceKWh,
+      cost: invoiceKWh * tariff
+    };
+  }, [rawHistory, tariff, previousReadingDate, lastReadingDate, isMounted]);
+
+  if (isLoading || !energyData || !isMounted) {
     return <DashboardSkeleton />;
   }
 
@@ -90,10 +118,9 @@ export default function Home() {
     try {
       await set(ref(db, '/config/tarifa'), values.tariff);
       await set(ref(db, '/config/leituraInicial'), values.initialReading);
+      await set(ref(db, '/config/dataPenultimaLeitura'), values.previousReadingDate);
       await set(ref(db, '/config/dataUltimaLeitura'), values.lastReadingDate);
       await set(ref(db, '/config/dataProximaLeitura'), values.nextReadingDate);
-      await set(ref(db, '/config/metaMensal'), values.monthlyGoal);
-      await set(ref(db, '/config/leituraFaturaAnterior'), values.lastInvoiceReading);
       
       toast({ title: "Sucesso!", description: "Configurações atualizadas." });
       setIsModalOpen(false);
@@ -110,7 +137,7 @@ export default function Home() {
           onSettingsClick={() => setIsModalOpen(true)}
         />
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mt-6 md:mt-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-6 mt-6 md:mt-8">
           <MetricCard
             title="Potência"
             icon={Zap}
@@ -128,6 +155,14 @@ export default function Home() {
             footerText={`Custo: ${costToday}`}
           />
           <MetricCard
+            title="Última Fatura"
+            icon={Receipt}
+            value={lastInvoiceData.kwh.toFixed(1)}
+            unit="kWh"
+            valueClassName="text-amber-500"
+            footerText={`R$ ${lastInvoiceData.cost.toFixed(2)}`}
+          />
+          <MetricCard
             title={lastReadingDate ? "Ciclo Atual" : "Este Mês"}
             icon={CalendarDays}
             value={currentMonthData.kwh.toFixed(1)}
@@ -135,11 +170,11 @@ export default function Home() {
             footerText={`R$ ${currentMonthData.cost.toFixed(2)}`}
           />
           <MetricCard
-            title="Total"
+            title="Total Geral"
             icon={AreaChart}
             value={totalConsumptionWithOffset.toFixed(1)}
             unit="kWh"
-            footerText={monthlyGoal > 0 ? `Meta: ${monthlyGoal} kWh` : undefined}
+            footerText="Acumulado medidor"
           />
         </div>
 
@@ -149,7 +184,7 @@ export default function Home() {
         </div>
 
         <footer className="text-center mt-12 pb-8 text-muted-foreground text-[10px] md:text-sm">
-          <p>Consumo de Energia - Feito com ❤️ para monitoramento residencial.</p>
+          <p>Consumo de Energia - Monitoramento residencial inteligente.</p>
         </footer>
       </div>
       
@@ -160,10 +195,9 @@ export default function Home() {
         initialValues={{
           tariff,
           initialReading,
+          previousReadingDate,
           lastReadingDate,
-          nextReadingDate,
-          monthlyGoal,
-          lastInvoiceReading
+          nextReadingDate
         }}
       />
     </main>

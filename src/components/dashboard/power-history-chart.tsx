@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceArea } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
-import { Calendar as CalendarIcon, FilterX, Activity, ZoomIn, Maximize2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, Activity, ZoomIn, Maximize2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { PowerHistoryData } from '@/lib/types';
@@ -17,13 +17,15 @@ type PowerHistoryChartProps = {
 };
 
 export function PowerHistoryChart({ powerHistory }: PowerHistoryChartProps) {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   
-  // Estados para o Zoom e Navegação
+  useEffect(() => {
+    setSelectedDate(new Date());
+  }, []);
+
   const [refAreaLeft, setRefAreaLeft] = useState<number | null>(null);
   const [refAreaRight, setRefAreaRight] = useState<number | null>(null);
   
-  // Domínio em minutos (0 a 1439)
   const [left, setLeft] = useState<number | 'dataMin'>('dataMin');
   const [right, setRight] = useState<number | 'dataMax'>('dataMax');
   const [top, setTop] = useState<number | 'auto'>('auto');
@@ -52,7 +54,6 @@ export function PowerHistoryChart({ powerHistory }: PowerHistoryChartProps) {
       .sort((a, b) => a.minutes - b.minutes);
   }, [powerHistory, selectedDate]);
 
-  // Cálculo da duração atual exibida
   const currentInterval = useMemo(() => {
     if (left === 'dataMin' || right === 'dataMax' || rawData.length === 0) {
       return null;
@@ -85,7 +86,6 @@ export function PowerHistoryChart({ powerHistory }: PowerHistoryChartProps) {
       [start, end] = [refAreaRight, refAreaLeft];
     }
 
-    // Ajuste vertical automático para a área de zoom
     const zoomData = rawData.filter(d => d.minutes >= start && d.minutes <= end);
     if (zoomData.length > 0) {
       const watts = zoomData.map(d => d.watts);
@@ -115,7 +115,6 @@ export function PowerHistoryChart({ powerHistory }: PowerHistoryChartProps) {
     let newLeft = (left as number) + delta;
     let newRight = (right as number) + delta;
 
-    // Clampar limites do dia (0 a 1439)
     if (newLeft < 0) {
       newRight -= newLeft;
       newLeft = 0;
@@ -125,7 +124,6 @@ export function PowerHistoryChart({ powerHistory }: PowerHistoryChartProps) {
       newRight = 1439;
     }
 
-    // Recalcular Y
     const zoomData = rawData.filter(d => d.minutes >= newLeft && d.minutes <= newRight);
     if (zoomData.length > 0) {
       const watts = zoomData.map(d => d.watts);
@@ -285,7 +283,6 @@ export function PowerHistoryChart({ powerHistory }: PowerHistoryChartProps) {
           )}
         </div>
 
-        {/* Controles de Navegação e Duração */}
         {currentInterval && (
           <div className="mt-6 flex flex-col items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
             <div className="flex items-center gap-4 bg-muted/50 p-1 rounded-full border border-white/10">

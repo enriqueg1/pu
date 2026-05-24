@@ -17,10 +17,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 type SettingsValues = {
   tariff: number;
   initialReading: number;
+  previousReadingDate: string;
   lastReadingDate: string;
   nextReadingDate: string;
-  monthlyGoal: number;
-  lastInvoiceReading: number;
 };
 
 type SettingsModalProps = {
@@ -36,32 +35,29 @@ export function SettingsModal({
   onSave,
   initialValues,
 }: SettingsModalProps) {
-  const [tariffValue, setTariffValue] = useState(initialValues.tariff.toString());
-  const [initialReadingValue, setInitialReadingValue] = useState(initialValues.initialReading.toString());
-  const [lastReadingDate, setLastReadingDate] = useState(initialValues.lastReadingDate);
-  const [nextReadingDate, setNextReadingDate] = useState(initialValues.nextReadingDate);
-  const [monthlyGoal, setMonthlyGoal] = useState(initialValues.monthlyGoal.toString());
-  const [lastInvoiceReading, setLastInvoiceReading] = useState(initialValues.lastInvoiceReading.toString());
+  const [tariffValue, setTariffValue] = useState('');
+  const [initialReadingValue, setInitialReadingValue] = useState('');
+  const [previousReadingDate, setPreviousReadingDate] = useState('');
+  const [lastReadingDate, setLastReadingDate] = useState('');
+  const [nextReadingDate, setNextReadingDate] = useState('');
 
   useEffect(() => {
     if (isOpen) {
       setTariffValue(initialValues.tariff.toString());
       setInitialReadingValue(initialValues.initialReading.toString());
+      setPreviousReadingDate(initialValues.previousReadingDate || '');
       setLastReadingDate(initialValues.lastReadingDate || '');
       setNextReadingDate(initialValues.nextReadingDate || '');
-      setMonthlyGoal(initialValues.monthlyGoal.toString());
-      setLastInvoiceReading(initialValues.lastInvoiceReading.toString());
     }
-  }, [initialValues, isOpen]);
+  }, [isOpen, initialValues]);
 
   const handleSave = () => {
     onSave({
       tariff: parseFloat(tariffValue) || 0,
       initialReading: parseFloat(initialReadingValue) || 0,
+      previousReadingDate: previousReadingDate,
       lastReadingDate: lastReadingDate,
       nextReadingDate: nextReadingDate,
-      monthlyGoal: parseFloat(monthlyGoal) || 0,
-      lastInvoiceReading: parseFloat(lastInvoiceReading) || 0,
     });
   };
   
@@ -90,10 +86,6 @@ export function SettingsModal({
                 <Label htmlFor="tarifa" className="text-right text-xs">Tarifa (R$/kWh)</Label>
                 <Input id="tarifa" value={tariffValue} onChange={handleNumericChange(setTariffValue)} className="col-span-3" />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="meta" className="text-right text-xs">Meta Mensal (kWh)</Label>
-                <Input id="meta" value={monthlyGoal} onChange={handleNumericChange(setMonthlyGoal)} className="col-span-3" />
-              </div>
             </div>
 
             <div className="space-y-4">
@@ -102,20 +94,20 @@ export function SettingsModal({
                 <Label htmlFor="leitura-inicial" className="text-right text-xs">Leitura Medidor (kWh)</Label>
                 <Input id="leitura-inicial" value={initialReadingValue} onChange={handleNumericChange(setInitialReadingValue)} className="col-span-3" />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="leitura-fatura" className="text-right text-xs">Fatura Anterior (kWh)</Label>
-                <Input id="leitura-fatura" value={lastInvoiceReading} onChange={handleNumericChange(setLastInvoiceReading)} className="col-span-3" />
-              </div>
             </div>
 
             <div className="space-y-4">
-              <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Ciclo de Cobrança</h4>
+              <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Datas do Ciclo</h4>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="data-inicio" className="text-right text-xs">Última Leitura</Label>
+                <Label htmlFor="data-penultima" className="text-right text-xs leading-tight">Leitura Anterior</Label>
+                <Input id="data-penultima" type="date" value={previousReadingDate} onChange={(e) => setPreviousReadingDate(e.target.value)} className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="data-inicio" className="text-right text-xs leading-tight">Leitura Atual</Label>
                 <Input id="data-inicio" type="date" value={lastReadingDate} onChange={(e) => setLastReadingDate(e.target.value)} className="col-span-3" />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="data-fim" className="text-right text-xs">Próxima Leitura</Label>
+                <Label htmlFor="data-fim" className="text-right text-xs leading-tight">Próxima Leitura</Label>
                 <Input id="data-fim" type="date" value={nextReadingDate} onChange={(e) => setNextReadingDate(e.target.value)} className="col-span-3" />
               </div>
             </div>

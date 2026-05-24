@@ -17,12 +17,10 @@ export function useEnergyData() {
   const [tariff, setTariff] = useState<number>(DEFAULT_TARIFA);
   const [initialReading, setInitialReading] = useState<number>(DEFAULT_INITIAL_READING);
   
-  // Novas configurações
-  const [lastReadingDate, setLastReadingDate] = useState<string>('');
-  const [nextReadingDate, setNextReadingDate] = useState<string>('');
-  const [monthlyGoal, setMonthlyGoal] = useState<number>(0);
-  const [lastInvoiceReading, setLastInvoiceReading] = useState<number>(0);
-
+  // Configurações de Ciclo
+  const [previousReadingDate, setPreviousReadingDate] = useState<string>(''); // Data que iniciou a fatura anterior
+  const [lastReadingDate, setLastReadingDate] = useState<string>('');     // Data que fechou a fatura anterior e iniciou a atual
+  const [nextReadingDate, setNextReadingDate] = useState<string>('');     // Previsão de fechamento da atual
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -36,10 +34,9 @@ export function useEnergyData() {
     const powerHistoryRef = ref(db, 'historico_potencia');
     const tariffRef = ref(db, '/config/tarifa');
     const initialReadingRef = ref(db, '/config/leituraInicial');
+    const previousReadingDateRef = ref(db, '/config/dataPenultimaLeitura');
     const lastReadingDateRef = ref(db, '/config/dataUltimaLeitura');
     const nextReadingDateRef = ref(db, '/config/dataProximaLeitura');
-    const monthlyGoalRef = ref(db, '/config/metaMensal');
-    const lastInvoiceReadingRef = ref(db, '/config/leituraFaturaAnterior');
 
     const unsubscribeEnergy = onValue(energyRef, (snapshot) => {
       if (snapshot.exists()) {
@@ -68,6 +65,10 @@ export function useEnergyData() {
       if (snapshot.exists()) setInitialReading(snapshot.val());
     });
 
+    const unsubscribePreviousDate = onValue(previousReadingDateRef, (snapshot) => {
+      if (snapshot.exists()) setPreviousReadingDate(snapshot.val());
+    });
+
     const unsubscribeLastDate = onValue(lastReadingDateRef, (snapshot) => {
       if (snapshot.exists()) setLastReadingDate(snapshot.val());
     });
@@ -76,24 +77,15 @@ export function useEnergyData() {
       if (snapshot.exists()) setNextReadingDate(snapshot.val());
     });
 
-    const unsubscribeGoal = onValue(monthlyGoalRef, (snapshot) => {
-      if (snapshot.exists()) setMonthlyGoal(snapshot.val());
-    });
-
-    const unsubscribeLastInvoice = onValue(lastInvoiceReadingRef, (snapshot) => {
-      if (snapshot.exists()) setLastInvoiceReading(snapshot.val());
-    });
-
     return () => {
       off(energyRef);
       off(historyRef);
       off(powerHistoryRef);
       off(tariffRef);
       off(initialReadingRef);
+      off(previousReadingDateRef);
       off(lastReadingDateRef);
       off(nextReadingDateRef);
-      off(monthlyGoalRef);
-      off(lastInvoiceReadingRef);
     };
   }, []);
 
@@ -102,13 +94,10 @@ export function useEnergyData() {
     rawHistory, 
     powerHistory,
     tariff, 
-    setTariff, 
     initialReading, 
-    setInitialReading,
+    previousReadingDate,
     lastReadingDate,
     nextReadingDate,
-    monthlyGoal,
-    lastInvoiceReading,
     isLoading 
   };
 }

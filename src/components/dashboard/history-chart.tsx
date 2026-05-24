@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Bar, ComposedChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,9 +21,13 @@ type ViewType = 'day' | 'week' | 'month';
 
 export function HistoryChart({ rawHistory, tariff }: HistoryChartProps) {
   const [view, setView] = useState<ViewType>('day');
-  // Inicializa com o início do mês atual e o fim do dia de hoje
-  const [startDate, setStartDate] = useState<Date | undefined>(startOfMonth(new Date()));
-  const [endDate, setEndDate] = useState<Date | undefined>(endOfDay(new Date()));
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+
+  useEffect(() => {
+    setStartDate(startOfMonth(new Date()));
+    setEndDate(endOfDay(new Date()));
+  }, []);
 
   const chartData = useMemo(() => {
     if (!startDate || !endDate) return [];
@@ -93,7 +97,7 @@ export function HistoryChart({ rawHistory, tariff }: HistoryChartProps) {
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-7 text-xs px-2 gap-2">
-                  <CalendarIcon className="h-3 w-3" />
+                  <CalendarIcon className="h-3.5 w-3.5" />
                   {startDate ? format(startDate, 'dd/MM/yy') : 'Início'}
                 </Button>
               </PopoverTrigger>
